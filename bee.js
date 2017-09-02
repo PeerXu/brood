@@ -1,5 +1,65 @@
-let _bee = null;
+function new_task(id) {
+  let tsk = {};
 
+  tsk.id = id;
+  tsk.state = "unsync";
+  tsk.result = undefined;
+  tsk._synced = false;
+
+  tsk._sync = () => {
+    if (!tsk._synced) {
+      // sync task from service
+    }
+  };
+
+  tsk._upload = () => {
+
+  };
+
+
+  tsk.set_result = async (result) => {
+    await tsk._sync();
+
+    if (tsk.state !== "running") {
+      throw "MUST set result for running task!";
+    }
+
+    tsk.result = result;
+    tsk.state = "finished";
+
+    await tsk._upload();
+  };
+
+  return tsk;
+}
+
+
+
+let _task_hub = null;
+function _new_task_hub() {
+  let th = {};
+
+  th._tasks = {};
+
+  th.get_task_by_id = (id) => {
+    if (!(id in th._tasks)) {
+      th._tasks[id] = new_task(id);
+    }
+
+    return th._tasks[id];
+  };
+
+  return th;
+}
+
+function get_task_hub() {
+  if (!_task_hub) {
+    _task_hub = _new_task_hub();
+  }
+  return _task_hub;
+}
+
+let _bee = null;
 function new_bee() {
   let bee = {};
 
@@ -50,8 +110,8 @@ function new_bee() {
       worker.addEventListener("message", (evt) => {
         console.log("received: " + evt.data);
         resolve(evt.data);
-        // delete bee._workers[task.name];
-        // worker.terminate();
+        delete bee._workers[task.name];
+        worker.terminate();
       });
       worker.postMessage(task.data);
     });
